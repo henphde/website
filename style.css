@@ -1,0 +1,61 @@
+/* Grundfarben – werden durch JS überschrieben */
+:root {
+  --sky-top:   #ffb474;
+  --sky-bot:   #ffe4b0;
+  --sun-x:     50%;
+  --sun-y:     120%;
+  --sun-scale: 0.8;
+  --night:     0;            /* 0 = Tag, 1 = Nacht */
+}
+
+/* Fester Hintergrund-Layer */
+#sky {
+  position: fixed;
+  inset: 0;
+  z-index: -2;               /* hinter allem */
+  pointer-events: none;
+  background: linear-gradient(var(--sky-top) 0%, var(--sky-bot) 100%);
+  transition: background 350ms linear;
+}
+
+/* ===== Sterne als sanfte Punkte, drei Ebenen, kein Drift ===== */
+#sky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  /* Drei SVG-Tiles (Kreise) – 1 px, 1.5 px, 2 px */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='12' cy='18' r='1' fill='white'/%3E%3Ccircle cx='56' cy='42' r='1' fill='white'/%3E%3Ccircle cx='34' cy='68' r='1' fill='white'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Ccircle cx='24' cy='40' r='1.5' fill='white' fill-opacity='0.8'/%3E%3Ccircle cx='92' cy='20' r='1.5' fill='white'/%3E%3Ccircle cx='130' cy='120' r='1.5' fill='white' fill-opacity='0.6'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Ccircle cx='48' cy='60' r='2' fill='white' fill-opacity='0.9'/%3E%3Ccircle cx='220' cy='100' r='2' fill='white' fill-opacity='0.7'/%3E%3Ccircle cx='160' cy='260' r='2' fill='white' fill-opacity='0.5'/%3E%3C/svg%3E");
+
+  /* Unterschiedliche Kachelgrößen → zufällige Streuung */
+  background-size: 240px 240px, 520px 520px, 960px 960px;
+  background-position: 0 0, 140px 90px, -160px -130px;
+
+  /* Weiche Kanten + dezent leuchtender Halo */
+  filter: blur(0.6px) drop-shadow(0 0 2px #fff);
+
+  /* Ein-/Ausblenden je nach Tagesfortschritt */
+  opacity: clamp(0, (var(--night) - .4) * 2, 1);
+}
+
+/* ===== Schatten unter dem Pfosten ===== */
+#signShadow {
+  position: fixed;
+  left: 50%;                       /* zentriert */
+  width: 40vw;                     /* breit genug für alle Viewports   */
+  max-width: 600px;                /* aber nicht riesig                */
+  aspect-ratio: 4 / 1;             /* flache Ellipse                   */
+  background: radial-gradient(
+              ellipse at center,
+              rgba(0,0,0,.35) 0%,
+              rgba(0,0,0,0) 70%);
+  transform: translate(-50%, 60vh) scale(1); /* Startwert – wird per JS überschrieben */
+  transform-origin: center top;
+  filter: blur(14px);              /* weiche Kanten                     */
+  pointer-events: none;            /* klickt nichts weg                 */
+  z-index: 10;                     /* über Hügel, unter Schild          */
+}
