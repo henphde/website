@@ -1,1 +1,248 @@
-test
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>henph.de</title>
+  <script>
+    // Variablen für das Ortsschild
+    const sign = document.getElementById("sign");
+    const signHeight = sign.offsetHeight;
+
+    // Funktion zum Aktualisieren der Position und Größe des Schildes
+    function updateSign() {
+      const scrollY = window.scrollY;
+      const viewportHeight = window.innerHeight;
+
+      // Berechnung der neuen Größe und Position
+      const newHeight = Math.max(10, 20 - (scrollY / viewportHeight) * 10);
+      sign.style.transform = `translate(-50%, ${newHeight}vh) scale(${newHeight / 20})`;
+    }
+
+    // Event-Listener für das Scrollen
+    window.addEventListener("scroll", updateSign);
+  </script>
+
+  <style>
+    /* ====== Grundlayout ====== */
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Fira Sans", Arial, sans-serif;
+      background: #98eaff;
+
+    /* Kein horizontales Scrollen */
+    body {
+      overflow-x: hidden;
+    }
+
+    /* =============================================================
+       Ortsschild (fixed) – skaliert & gleitet vertikal im Viewport
+       ============================================================= */
+    #sign {
+      /* Fixiert im Viewport */
+      position: fixed;
+      top: 0;
+      left: 50%;  /* horizontal zentrieren */
+
+      /* Initiale Transformation: 20 vh nach unten, volle Größe */
+      transform: translate(-50%, 20vh) scale(1);
+      transform-origin: top center;
+
+      /* Proportionen & Optik */
+      width: 90vw;          /* leichter Rand links/rechts */
+      max-width: 1400px;    /* nicht unendlich breit */
+      aspect-ratio: 3 / 2;  /* DIN‑Schild 900×600 mm → 3:2 */
+
+      background: #ffd800;  /* klassisches Schild‑Gelb */
+      border: 8px solid #000;
+      border-radius: 8px;
+
+      display: flex;
+      flex-direction: column;  /* drei Zeilen untereinander */
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+
+      z-index: 1000;          /* immer vorn */
+
+      /* Container Query ermöglicht Schriftgrößen in cqi */
+      container-type: inline-size;
+    }
+
+    /* Innerer schwarzer Rahmen (Doppelkante) */
+    #sign::before {
+      content: "";
+      position: absolute;
+      inset: 8px;              /* Top / Right / Bottom / Left */
+      border: 4px solid #000;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    /* Pfosten (Stange) als ::after – skaliert mit dem Schild */
+    #sign::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;                   /* direkt unterhalb der Unterkante */
+      width: min(2vw, 24px);       /* dicker, max 24 px */
+      height: 60vh;                /* länger: 60 % der Viewporthöhe */
+      background: #777;
+      border: 3px solid #444;      /* etwas dickerer Rand */
+      border-top: none;            /* bündig mit Schildunterkante */
+      transform: translateX(-50%);
+      z-index: -1;                 /* hinter das Schild */
+    }
+    }
+
+    /* =============================================================
+       Schild‑Beschriftung (3 Zeilen)
+       ============================================================= */
+    #signTop,
+    #signMiddle,
+    #signBottom {
+      line-height: 1;
+      text-align: center;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    /* --- Fallback für Browser ohne Container Queries --- */
+    #signMiddle { font-size: 10vmin; font-weight: 700; }
+    #signTop,
+    #signBottom { font-size: 5vmin;  font-weight: 600; }
+
+    /* Abstände zwischen Zeilen */
+    #signTop    { margin-bottom: 0.25em; }
+    #signMiddle { margin-bottom: 0.25em; }
+
+    /* --- Exakte Größen via Container Queries (cqi) --- */
+    @supports (font-size: 1cqi) {
+      #signMiddle { font-size: clamp(2rem, 16cqi, 12rem); font-weight: 700; }
+      #signTop,
+      #signBottom { font-size: clamp(1rem, 7cqi, 7rem); font-weight: 700; }
+    }
+
+    /* =============================================================
+       Platzhalter‑Abschnitte – nur zum Scroll‑Testen
+       ============================================================= */
+    .scene {
+      height: 100vh;
+      background: #cde;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ortsschild: Nur zwei Zeilen, beide gleich groß -->
+  <header id="sign">
+    <span id="signMiddle" style="font-size: 17vmin; font-weight: 700;">
+      <span style="font-weight: 700;">Henph</span><span style="font-weight: 300;">.de</span>
+    </span>
+    <span id="signBottom" style="font-size: 6vmin; font-weight: 700;">
+      <span style="font-weight: 300;">Grüße aus </span><span style="font-weight: 700;">Rochlitz</span>
+    </span>
+  </header>
+
+  <!-- Erster Viewport (Trigger für Shrink) -->
+  <section id="trigger" style="height: 100vh"></section>
+
+  <!-- Weitere Dummy‑Abschnitte zum Scrollen -->
+  <section class="scene"></section>
+  <section class="scene"></section>
+
+  <script>
+    /* =============================================================
+       Shrink‑ & Sticky‑Logik
+       -------------------------------------------------------------
+       ‣ Solange der Benutzer innerhalb des ersten Viewports scrollt
+         (0 – 100 vh), wird
+           • skaliert   : 1  → 0.35
+           • übersetzt Y: 20 → 10 vh
+       ‣ Danach bleibt Skala 0.35 & Y = 10 vh dauerhaft erhalten.
+    ============================================================= */
+    (() => {
+      const sign        = document.getElementById("sign");
+      const targetScale = 0.72;   // Endgröße
+      const startY      = 20;     // Startoberkante (vh)
+      const endY        = 10;     // Zieloberkante (vh)
+
+      /**
+       * handle() wird bei Scroll & Resize aufgerufen und setzt
+       * transform entsprechend des Scroll‑Fortschritts.
+       */
+      function handle() {
+        const scrollY = window.scrollY;
+        const max     = window.innerHeight;                // 100 vh
+        const progress = Math.min(1, Math.max(0, scrollY / max));
+
+        // Linear interpolierte Skala & Y‑Position
+        const scale = 1 - (1 - targetScale) * progress;    // 1 → 0.35
+        const y     = startY - (startY - endY) * progress; // 20 → 10 vh
+
+        sign.style.transform = `translate(-50%, ${y}vh) scale(${scale})`;
+      }
+
+      // Initiale Berechnung & Event‑Listener
+      handle();
+      window.addEventListener("scroll", handle, { passive: true });
+      window.addEventListener("resize", handle);
+    })();
+  </script>
+<!-- Hügel (sticky bottom + Parallax) -->
+<style>
+  /* Hellgrüner Hügel am unteren Rand */
+  #hill {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 34vh;                             /* unteres Drittel */
+    background: linear-gradient(#8edc6e 0%,    /* dunkler oben */
+                               #a8e88f 100%);  /* heller unten */
+
+    /* elliptische Kontur für sanften Hügel */
+    clip-path: ellipse(75% 100% at 50% 100%);
+
+    z-index: 900;            /* unter dem Ortsschild, vor Hintergrund */
+    pointer-events: none;    /* blockiert keine Klicks/Scrolls */
+    transform: translateY(5vh); /* Start-Offset für Parallax (→ JS) */
+  }
+</style>
+<div id="hill" style="z-index: 1100;"></div>
+
+<script>
+  /* Parallax- und Shape-Animation des Hügels: Anfangs fast flach, am Ende rund */
+  (() => {
+    const hill = document.getElementById('hill');
+    const offsetStart = 3;  // Start: weiter oben
+    const offsetEnd = 5;    // Endposition: wie bisher (5vh sichtbar)
+    const ellipseStart = { rx: 100, ry: 5 }; // Anfang: fast flach (ry% sehr klein)
+    const ellipseEnd = { rx: 75, ry: 100 };  // Ende: runder Hügel (rx%, ry%)
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function handle() {
+      const progress = Math.min(1, window.scrollY / window.innerHeight); // 0–1
+      const y = offsetStart - (offsetStart - offsetEnd) * progress;
+
+      // Interpolierte Ellipse für clip-path
+      const rx = lerp(ellipseStart.rx, ellipseEnd.rx, progress);
+      const ry = lerp(ellipseStart.ry, ellipseEnd.ry, progress);
+
+      hill.style.transform = `translateY(${y}vh)`;
+      hill.style.clipPath = `ellipse(${rx}% ${ry}% at 50% 100%)`;
+      hill.style.webkitClipPath = `ellipse(${rx}% ${ry}% at 50% 100%)`;
+    }
+
+    handle(); // initial
+    window.addEventListener('scroll', handle, { passive: true });
+    window.addEventListener('resize', handle);
+  })();
+</script>
+</body>
+</html>
